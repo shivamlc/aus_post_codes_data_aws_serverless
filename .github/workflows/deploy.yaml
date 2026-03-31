@@ -24,7 +24,8 @@ jobs:
       - name: Build native image
         run: |
           mvn -Pnative package -DskipTests
-          zip -j target/postcode-distance.zip target/postcode-distance
+          ls -la target/
+          zip -j target/postcode-distance.zip target/aus_post_codes_data_aws_serverless
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
