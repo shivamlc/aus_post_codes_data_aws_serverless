@@ -1,0 +1,48 @@
+name: Deploy Postcode Processor
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-southeast-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "21"
+          distribution: "graalvm"
+          native-image-job-reports: "true"
+
+      - name: Build native image
+        run: |
+          mvn -Pnative package -DskipTests
+          zip -j target/postcode-distance.zip target/postcode-distance
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init & apply
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=postcode-distance/terraform.tfstate"
+          terraform apply -auto-approve
+
+      - name: Update Lambda code
+        run: |
+          aws lambda update-function-code \
+            --function-name postcode-distance-processor \
+            --zip-file fileb://target/postcode-distance.zip

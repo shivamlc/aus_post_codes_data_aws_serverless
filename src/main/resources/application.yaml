@@ -1,3 +1,16 @@
 spring:
   application:
     name: aus_post_codes_data_aws_serverless
+  main:
+    banner-mode: off
+    web-application-type: none
+  cloud:
+    function:
+      definition: postcodeHandler
+logging:
+  level:
+    root: WARN
+
+# Injected by Terraform as a Lambda environment variable
+dynamodb:
+  table: ${DYNAMODB_TABLE}
